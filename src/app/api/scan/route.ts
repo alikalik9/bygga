@@ -88,7 +88,7 @@ async function scan(key: string, pages: string[], hint: string, send: (o: object
     { role: "user", content: planInput(notes, hint) },
   ];
   const ask = async () => {
-    const { text } = await chatText({ key, models: MODELS.plan, json: true, maxTokens: 16000, temperature: 0.2, reasoning: "medium", signal, messages: msgs });
+    const { text } = await chatText({ key, models: MODELS.plan, json: true, maxTokens: 128000, temperature: 0.2, reasoning: "high", signal, messages: msgs });
     return { text, raw: extractJson(text) };
   };
   let { text, raw } = await ask();
