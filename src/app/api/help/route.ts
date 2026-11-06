@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       key,
       models: image ? MODELS.vision : MODELS.text,
       stream: true,
-      maxTokens: image ? 1200 : 500,
+      maxTokens: image ? 1500 : 900,
       temperature: 0.4,
       messages: [{ role: "system", content: SYSTEM + "\n\nWhere they are:\n" + context }, ...history, user],
     });
