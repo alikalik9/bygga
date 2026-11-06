@@ -15,6 +15,9 @@ Rules:
 - Hardware kinds: dowel, cam bolt, cam lock, screw, nail, shelf pin, bolt, leg bolt, hinge, knob, handle, wall bracket, felt pad, plate, other.
 - For steps, say plainly where things go: on top, underneath, left, right, front or back, and which parts touch.
 - Read part sizes from any dimension lines or numbers printed next to the drawings.
+- A page can hold more than one numbered step. Report each numbered step separately in steps, using the number printed beside its drawing, and keep them in order.
+- A parts list, a hardware list or a "you will need" box is not a step. Never report one as a step.
+- Large metal pieces that the person fits as a unit, such as a lift mechanism, a gas spring, a hinge, a metal frame or a leg, belong in parts with their printed label. Small screws, dowels, cams, nuts and washers belong in hardware only.
 - If the photo shows the box or the finished product rather than a page, use kind "cover", and describe its shape in product.type, like "low media stand with two shelves and a vertical divider, about 70 cm wide".`;
 
 export const PLAN_PROMPT = `You turn an assembly manual into data for an animated 3D step by step guide. You get notes read from images of the manual's pages, in order, and maybe a name the person typed.
@@ -49,13 +52,18 @@ Geometry, read this carefully:
 - Pieces that are joined touch face to face exactly, with no gap and no overlap. Do the arithmetic for every piece: if sides 18 thick stand at x = -341 and x = 341, their inner faces are at -332 and 332, so a top that fits between them is 664 wide.
 - Legs, rails, slats and rods are boxes too. Use "shape": "cyl" for round ones, with size [diameter, length, diameter] when upright or [length, diameter, diameter] when lying along x.
 - materials: board (particleboard, MDF, plywood), fiber (thin hardboard backs and drawer bottoms), wood (solid wood, legs, slats), metal, soft (cushions, mattresses).
-- Leave out hardware and packaging. At most 60 parts. If there are many identical slats, keep up to 12.
+- Large metal pieces that the person fits as a unit, such as a lift mechanism, a gas spring, a hinge, a metal frame, a rail or a leg, are parts too: draw each as a simple box or cylinder with material metal. Leave out small screws, dowels, cams, nuts and washers, which the guide draws as fittings.
+- Leave out packaging. At most 60 parts. If there are many identical slats, keep up to 12.
 
 Steps:
-- Follow the manual's own order. Write each title as one short instruction, under 60 characters. detail is one or two short sentences. Never use em dashes or en dashes.
+- Use one step per numbered step in the manual, in the manual's order. Never split one numbered step into several steps, and never repeat the same action in two steps.
+- If a page shows two numbered steps, keep both.
+- Never make a step that only lists hardware or tools, like "You'll need four dowels". Hardware belongs to the step that uses it.
+- Only make steps that join parts or fit hardware. Skip optional accessories (corner guards, wall straps, care kits), checks and notes, unless the manual makes them part of a numbered assembly step.
+- Write each title as one short instruction, under 60 characters. detail is one or two short sentences. Never use em dashes or en dashes.
 - add lists the ids of pieces that join the product in that step. Every piece is added exactly once, in the first step that uses it.
 - fix lists the hardware used in that step and how many. kind is one of: dowel, camScrew (cam bolt or connecting screw), cam (cam lock disc), screw, nail, pin (shelf pin), bolt (allen bolt or machine screw), legScrew (double ended leg bolt), hinge, knob, handle, bracket (wall fixing), glide (felt pad), plate. Use "to" with the ids it goes into when the manual makes that clear. Add len and dia in mm when they are printed.
-- pose is how the product lies while you work: upright, upside_down, on_back (front facing up), face_down (back facing up), on_left_side, on_right_side.
+- pose is how the product lies while you work: upright, upside_down, on_back (front facing up), face_down (back facing up), on_left_side, on_right_side. Follow the drawings: when a step shows the product upside down, on its back or on its side, set pose to match, and set it back to upright when the drawing does.
 - tools: allen, screwdriver, flathead, hammer, drill, wrench, level, tape, pencil, knife.
 - warnings: two (needs two people), floor (work on a soft surface), loose (don't fully tighten yet), hand (hand tight only), wall (fix it to the wall), tip (can tip over), square (check it is square), face (mind which way the finished side faces).
 - Usually 6 to 20 steps.

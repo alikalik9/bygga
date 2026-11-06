@@ -691,17 +691,32 @@ function emit(b: PlanBuilder, groups: Group[], used: Vec3[]) {
 function normalizeSteps(steps: CustomStep[], parts: CustomPart[]): CustomStep[] {
   const seen = new Set<string>();
   const ids = new Set(parts.map((p) => p.id));
-  const out: CustomStep[] = steps.slice(0, 80).map((s) => {
-    const add = (s.add ?? []).filter((id) => ids.has(id) && !seen.has(id));
-    add.forEach((id) => seen.add(id));
-    return { ...s, add };
-  });
+  // "You'll need four dowels" is a hardware summary, not something to do: the step that uses them already lists them
+  const summary = /^(you.?ll need|you will need|what you need|tools (you )?need|hardware (you )?need|parts (you )?need|hardware list|parts list)\b/i;
+  const out: CustomStep[] = steps
+    .slice(0, 80)
+    .map((s) => {
+      const add = (s.add ?? []).filter((id) => ids.has(id) && !seen.has(id));
+      add.forEach((id) => seen.add(id));
+      return { ...s, add };
+    })
+    .filter((s) => !(summary.test(s.title.trim()) && !(s.add ?? []).length));
   const missing = parts.filter((p) => !seen.has(p.id)).map((p) => p.id);
   if (missing.length) {
     const last = [...out].reverse().find((s) => s.add && s.add.length);
     if (last && missing.length <= 2) last.add = [...(last.add ?? []), ...missing];
     else out.push({ title: "Fit the remaining parts", detail: "Check each one against the drawing before you fix it.", add: missing });
   }
+  // a step that adds nothing, fits nothing and doesn't turn the build is a note, not something to do
+  let pose: Pose = "+y";
+  const doing = out.filter((s) => {
+    const next = s.pose ?? pose;
+    const moved = next !== pose;
+    pose = next;
+    return (s.add?.length ?? 0) > 0 || (s.fix?.length ?? 0) > 0 || moved;
+  });
+  out.length = 0;
+  out.push(...doing);
   if (!out.length) out.push({ title: "Put it together", add: parts.map((p) => p.id) });
   return out;
 }
