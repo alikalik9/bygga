@@ -1,4 +1,4 @@
-import { chat, fromApp, ipOf, keyTrouble, MODELS, rateLimited, TogetherError, userKey, type Msg } from "@/lib/together";
+import { chat, fromApp, ipOf, keyTrouble, MODELS, rateLimited, OpenRouterError, userKey, type Msg } from "@/lib/openrouter";
 
 interface Body {
   context?: string;
@@ -76,7 +76,7 @@ export async function POST(req: Request) {
     return new Response(stream, { headers: { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" } });
   } catch (e) {
     console.error("[help]", (e as Error).message);
-    const trouble = e instanceof TogetherError ? keyTrouble(e.status) : null;
+    const trouble = e instanceof OpenRouterError ? keyTrouble(e.status) : null;
     return Response.json({ error: trouble ?? "failed" }, { status: trouble === "key" ? 401 : trouble === "credits" ? 402 : 502 });
   }
 }

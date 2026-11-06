@@ -2,13 +2,13 @@
  * Pre-records every line the hands-free voice can say for the offline catalog.
  *
  *   npm run voice -- --dry      list what would be recorded and the cost
- *   npm run voice               record missing clips (needs TOGETHER_API_KEY)
+ *   npm run voice               record missing clips (needs OPENROUTER_API_KEY)
  *   npm run voice -- --only 10  record just the first few, to check the sound
  *   npm run voice -- --recheck  re-run the transcript check on the log, no recording
  *
- * The voice is TTS in src/lib/voice/tts.ts, on Together AI. Clips are named by
+ * The voice is TTS in src/lib/voice/tts.ts, on OpenRouter. Clips are named by
  * clipId(text), so only new or changed lines are recorded. Each clip is
- * loudness-matched, trimmed, then transcribed with Whisper on Together and
+ * loudness-matched, trimmed, then transcribed with Whisper on OpenRouter and
  * re-recorded if it doesn't say what the script says.
  */
 import { execFileSync } from "node:child_process";
@@ -68,7 +68,7 @@ const env = (k: string) => {
 };
 
 async function render(text: string): Promise<Buffer> {
-  return Buffer.from(await speak(DIRECTION + forTTS(text), env("TOGETHER_API_KEY")));
+  return Buffer.from(await speak(DIRECTION + forTTS(text), env("OPENROUTER_API_KEY")));
 }
 
 /** Trim silence, fade the edges, match loudness (two passes), mono 64 kbps mp3. */
@@ -115,11 +115,12 @@ function distance(a: string[], b: string[]) {
 }
 
 async function transcribe(file: string) {
-  const form = new FormData();
-  form.append("file", new Blob([new Uint8Array(readFileSync(file))], { type: "audio/mpeg" }), "clip.mp3");
-  form.append("model", "openai/whisper-large-v3");
-  form.append("language", "en");
-  const r = await fetch("https://api.together.ai/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${env("TOGETHER_API_KEY")}` }, body: form });
+  const input_audio = { data: readFileSync(file).toString("base64"), format: "mp3" };
+  const r = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${env("OPENROUTER_API_KEY")}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "openai/whisper-large-v3", input_audio }),
+  });
   if (!r.ok) throw new Error(`whisper ${r.status}`);
   return String((await r.json()).text ?? "");
 }

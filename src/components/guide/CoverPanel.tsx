@@ -153,8 +153,8 @@ export default function CoverPanel({
               <b>{s.custom?.fromCover ? "Drawn from the cover" : "Made from your manual"}</b>
               <span>
                 {s.custom?.fromCover
-                  ? `Together AI only saw the cover, so this is a typical build for this product.${SCAN_ENABLED ? " Scan the inside pages for an exact match." : " Keep the paper manual close."}`
-                  : "Together AI read your pages and drew each step. Check every step against the paper manual before you fix anything."}
+                  ? `OpenRouter only saw the cover, so this is a typical build for this product.${SCAN_ENABLED ? " Scan the inside pages for an exact match." : " Keep the paper manual close."}`
+                  : "OpenRouter read your pages and drew each step. Check every step against the paper manual before you fix anything."}
               </span>
               {s.custom?.fromCover && SCAN_ENABLED && (
                 <Link href="/scan" className="callout-link">
@@ -168,10 +168,10 @@ export default function CoverPanel({
             <div className="callout note">
               <ISparkle size={18} />
               <div>
-                <b>{via === "ai" ? "Drafted with Together AI" : "A typical build"}</b>
+                <b>{via === "ai" ? "Drafted with OpenRouter" : "A typical build"}</b>
                 <span>
                   {via === "ai"
-                    ? "Built from what Together AI knows about this product. If your box looks different, trust the paper manual."
+                    ? "Built from what OpenRouter knows about this product. If your box looks different, trust the paper manual."
                     : "We don't know this exact product yet, so this follows a typical build. Keep the paper manual close."}
                 </span>
                 {via === "guess" && onOwnSteps && (

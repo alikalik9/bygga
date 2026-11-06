@@ -1,4 +1,4 @@
-import { chatText, extractJson, fromApp, ipOf, keyTrouble, MODELS, rateLimited, TogetherError, userKey } from "@/lib/together";
+import { chatText, extractJson, fromApp, ipOf, keyTrouble, MODELS, rateLimited, OpenRouterError, userKey } from "@/lib/openrouter";
 
 const PROMPT = `This photo shows an IKEA product, its box, its label or its assembly manual cover. Read the product name.
 Reply with JSON only: {"name": "KALLAX", "variant": "2x4 shelving unit", "confidence": 0.0-1.0}.
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     return Response.json({ name, variant, query: [name, variant].filter(Boolean).join(" ").trim(), confidence: Number(j?.confidence ?? 0) });
   } catch (e) {
     console.error("[identify]", (e as Error).message);
-    const trouble = e instanceof TogetherError ? keyTrouble(e.status) : null;
+    const trouble = e instanceof OpenRouterError ? keyTrouble(e.status) : null;
     return Response.json({ error: trouble ?? "failed" }, { status: trouble === "key" ? 401 : trouble === "credits" ? 402 : 502 });
   }
 }

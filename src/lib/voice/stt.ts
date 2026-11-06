@@ -1,27 +1,32 @@
 import "server-only";
 
 /**
- * How the guide hears you, on Together AI: short pieces of mic audio turned
+ * How the guide hears you, on OpenRouter: short pieces of mic audio turned
  * into text. Whisper first (the best at picking a word out from under the
  * voice), Parakeet if it's unavailable.
  */
 export const STT = {
   models: ["openai/whisper-large-v3", "nvidia/parakeet-tdt-0.6b-v3"],
-  label: "Whisper on Together AI",
+  label: "Whisper on OpenRouter",
 };
 
 /** Text of one piece of 16 kHz mono WAV. Throws when every model fails; the message has the status, as "model 401: ...". */
 export async function transcribe(wav: ArrayBuffer, key: string, signal?: AbortSignal) {
   let last = "";
+  const input_audio = { data: Buffer.from(wav).toString("base64"), format: "wav" };
   for (const model of STT.models) {
-    const form = new FormData();
-    form.set("file", new Blob([wav], { type: "audio/wav" }), "talk.wav");
-    form.set("model", model);
-    form.set("language", "en");
-    form.set("temperature", "0");
-    form.set("response_format", "json");
     try {
-      const r = await fetch("https://api.together.ai/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form, signal });
+      const r = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+          "HTTP-Referer": (process.env.NEXT_PUBLIC_SITE_URL || "https://www.usebygga.com").replace(/\/$/, ""),
+          "X-OpenRouter-Title": "Bygga",
+        },
+        body: JSON.stringify({ model, input_audio }),
+        signal,
+      });
       if (r.ok) return String(((await r.json()) as { text?: unknown }).text ?? "").trim();
       last = `${model} ${r.status}: ${(await r.text()).slice(0, 160)}`;
       // a bad key or no credit fails the same way on every model

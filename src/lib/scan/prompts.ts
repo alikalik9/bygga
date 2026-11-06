@@ -1,4 +1,4 @@
-export const PAGE_PROMPT = `You are reading one photo of a page from a product assembly manual. It can be furniture or anything else that gets assembled, from any brand. Report what is on this page as JSON only, no prose.
+export const PAGE_PROMPT = `You are reading one image of a page from a product assembly manual, either a photo or a page rendered from a PDF. It can be furniture or anything else that gets assembled, from any brand. Report what is on this page as JSON only, no prose.
 
 {
   "kind": "cover" | "parts" | "hardware" | "tools" | "steps" | "warnings" | "other",
@@ -17,7 +17,7 @@ Rules:
 - Read part sizes from any dimension lines or numbers printed next to the drawings.
 - If the photo shows the box or the finished product rather than a page, use kind "cover", and describe its shape in product.type, like "low media stand with two shelves and a vertical divider, about 70 cm wide".`;
 
-export const PLAN_PROMPT = `You turn an assembly manual into data for an animated 3D step by step guide. You get notes read from photos of the manual's pages, in order, and maybe a name the person typed.
+export const PLAN_PROMPT = `You turn an assembly manual into data for an animated 3D step by step guide. You get notes read from images of the manual's pages, in order, and maybe a name the person typed.
 
 Reply with JSON only, no prose:
 {

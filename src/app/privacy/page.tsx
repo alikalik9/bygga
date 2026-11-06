@@ -20,7 +20,7 @@ export default function Privacy() {
         <h2>On your device</h2>
         <ul>
           <li>Your build progress, which step you are on, and settings like the voice, saved in your browser&apos;s local storage.</li>
-          <li>Your own Together AI key, if you add one. Every AI feature runs on it, so it is sent with those requests and used for them only. It is never stored or logged on our side.</li>
+          <li>Your own OpenRouter key, if you add one. Every AI feature runs on it, so it is sent with those requests and used for them only. It is never stored or logged on our side.</li>
           <li>Guides and voice clips you have opened, kept by the browser so they work offline.</li>
         </ul>
         <p>Clearing this site&apos;s data in your browser deletes all of it.</p>
@@ -38,8 +38,8 @@ export default function Privacy() {
         <h2>Who else sees it</h2>
         <ul>
           <li>
-            <b>Together AI</b> (United States) turns searches, questions and photos into answers, records voice lines, and turns what the mic hears into text, all on your own key. See their{" "}
-            <a href="https://www.together.ai/privacy" target="_blank" rel="noreferrer">
+            <b>OpenRouter</b> (United States) turns searches, questions and photos into answers, records voice lines, and turns what the mic hears into text, all on your own key. See their{" "}
+            <a href="https://openrouter.ai/privacy" target="_blank" rel="noreferrer">
               privacy policy
             </a>
             .

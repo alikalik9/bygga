@@ -191,11 +191,11 @@ export default function GuideApp({ slug, query, step, kind }: { slug: string; qu
   const ownSteps =
     via === "guess" && !initial && mounted && !loadProgress(slug)
       ? !ai
-        ? { text: `Add your Together AI key for ${plan.spec.name}'s own steps`, act: () => setAskKey("") }
+        ? { text: `Add your OpenRouter key for ${plan.spec.name}'s own steps`, act: () => setAskKey("") }
         : trouble === "key"
-          ? { text: `Together turned your key away. Fix it for ${plan.spec.name}'s own steps`, act: () => setAskKey("key") }
+          ? { text: `OpenRouter turned your key away. Fix it for ${plan.spec.name}'s own steps`, act: () => setAskKey("key") }
           : trouble === "credits"
-            ? { text: "Your Together credit ran out. Top it up, then tap here to try again", act: again }
+            ? { text: "Your OpenRouter credit ran out. Top it up, then tap here to try again", act: again }
             : { text: `Try again for ${plan.spec.name}'s own steps`, act: again }
       : undefined;
   return (
@@ -289,19 +289,19 @@ function NotFound({
           <span>
             {trouble === "credits" ? (
               <>
-                <b>Your Together credit ran out.</b>{" "}
-                <a href="https://api.together.ai/settings/billing" target="_blank" rel="noreferrer">
+                <b>Your OpenRouter credit ran out.</b>{" "}
+                <a href="https://openrouter.ai/settings/credits" target="_blank" rel="noreferrer">
                   Top it up
                 </a>{" "}
                 and AI can work out {name}&apos;s own steps.
               </>
             ) : trouble === "key" ? (
               <>
-                <b>Together turned your key away.</b> Fix it and AI can work out {name}&apos;s own steps.
+                <b>OpenRouter turned your key away.</b> Fix it and AI can work out {name}&apos;s own steps.
               </>
             ) : (
               <>
-                <b>Want {name}&apos;s own steps?</b> Add your Together AI key and AI works them out, for about a cent.
+                <b>Want {name}&apos;s own steps?</b> Add your OpenRouter key and AI works them out, for about a cent.
               </>
             )}
           </span>
@@ -917,9 +917,9 @@ function Guide({ plan, slug, via, ai, startStep, onOwnSteps }: { plan: Plan; slu
                 {!canListen && mounted && micSupported()
                   ? "Reading aloud"
                   : mic === "refused"
-                    ? "Together turned your key away"
+                    ? "OpenRouter turned your key away"
                     : mic === "credits"
-                      ? "Your Together credit ran out"
+                      ? "Your OpenRouter credit ran out"
                       : heard
                   ? `Heard “${heard}”`
                   : mic === "on"
@@ -955,7 +955,7 @@ function Guide({ plan, slug, via, ai, startStep, onOwnSteps }: { plan: Plan; slu
           )}
           {(via === "ai" || via === "scan") && phase === "cover" && (
             <span className="sheet-caption ai">
-              <ISparkle size={15} /> {via === "scan" ? "Made from your manual with Together AI" : "Drafted with Together AI"}
+              <ISparkle size={15} /> {via === "scan" ? "Made from your manual with OpenRouter" : "Drafted with OpenRouter"}
             </span>
           )}
         </section>

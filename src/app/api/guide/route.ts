@@ -2,7 +2,7 @@ import { PRODUCTS, toSpec } from "@/lib/catalog";
 import { categoryOf, fold, guessSpec, matchCatalog, searchCatalog } from "@/lib/search";
 import { parseSpec, SPEC_PROMPT } from "@/lib/spec";
 import { ikeaType } from "@/lib/ikea";
-import { chatText, extractJson, fromApp, ipOf, keyTrouble, MODELS, rateLimited, TogetherError, userKey } from "@/lib/together";
+import { chatText, extractJson, fromApp, ipOf, keyTrouble, MODELS, rateLimited, OpenRouterError, userKey } from "@/lib/openrouter";
 import type { ProductSpec } from "@/lib/types";
 
 const cache = new Map<string, { spec: ProductSpec; model: string }>();
@@ -50,9 +50,9 @@ export async function POST(req: Request) {
         return Response.json({ spec: out, via: "ai", model });
       }
     } catch (e) {
-      const err = e as TogetherError;
+      const err = e as OpenRouterError;
       trouble = keyTrouble(err.status);
-      console.error("[guide] together error", err.status, err.message);
+      console.error("[guide] openrouter error", err.status, err.message);
     }
   }
 

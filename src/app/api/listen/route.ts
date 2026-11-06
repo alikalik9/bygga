@@ -1,4 +1,4 @@
-import { fromApp, ipOf, rateLimited, userKey } from "@/lib/together";
+import { fromApp, ipOf, rateLimited, userKey } from "@/lib/openrouter";
 import { transcribe } from "@/lib/voice/stt";
 
 /** 3 s of 16 kHz 16-bit mono is 96 KB; a little room above that, nothing like a recording. */

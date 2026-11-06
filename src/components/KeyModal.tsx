@@ -9,10 +9,10 @@ import { KEY_URL, setUserKey, useUserKey } from "@/lib/userKey";
 
 /** What brought the person here: the modal leads with that. "key" is for checking or changing a saved key. */
 export type KeyWhy = "voice" | "ask" | "photo" | "draft" | "key";
-/** A key Together turned away, or an account out of credit. */
+/** A key OpenRouter turned away, or an account out of credit. */
 export type KeyTrouble = "key" | "credits";
 
-const BILLING_URL = "https://api.together.ai/settings/billing";
+const BILLING_URL = "https://openrouter.ai/settings/credits";
 
 const FEATURES = {
   next: { icon: IMic, b: "Say “next”", rest: "and it moves on. Your hands stay on the build." },
@@ -27,11 +27,11 @@ const COPY: Record<KeyWhy, { title: (name?: string) => string; bubble: string; f
   ask: { title: () => "Ask about any step", bubble: "Which one?", features: ["ask", "see", "next"] },
   photo: { title: () => "Search with a photo", bubble: "Found it", features: ["photo", "ask", "next"] },
   draft: { title: (name) => (name ? `Steps for ${name}` : "Steps for any product"), bubble: "How?", features: ["draft", "next", "ask"] },
-  key: { title: () => "Your Together AI key", bubble: "Hi!", features: ["next", "ask", "see"] },
+  key: { title: () => "Your OpenRouter key", bubble: "Hi!", features: ["next", "ask", "see"] },
 };
 
 /**
- * Asks for the person's own Together AI key, which every AI feature runs on:
+ * Asks for the person's own OpenRouter key, which every AI feature runs on:
  * what it unlocks, what it costs (about a cent a build) and where to get one.
  * Their key stays in this browser.
  */
@@ -126,7 +126,7 @@ export default function KeyModal({
     setState("checking");
     let reason = "";
     try {
-      const r = await fetch("/api/key", { method: "POST", headers: { "x-together-key": k } });
+      const r = await fetch("/api/key", { method: "POST", headers: { "x-openrouter-key": k } });
       const j = (await r.json()) as { ok: boolean; reason?: string };
       // a check that couldn't run doesn't block the key: it's tried for real on first use
       reason = j.ok || j.reason === "unavailable" ? "" : (j.reason ?? "rejected");
@@ -149,11 +149,11 @@ export default function KeyModal({
   const bad = state === "bad" || state === "busy";
   const help =
     state === "bad"
-      ? "Together didn't accept that key. Copy it again from your Together dashboard."
+      ? "OpenRouter didn't accept that key. Copy it again from your OpenRouter dashboard."
       : state === "busy"
         ? "That's a lot of tries. Wait a few minutes, then paste it again."
         : trouble === "key" && !draft
-      ? "Together turned your saved key away. Paste a new one."
+      ? "OpenRouter turned your saved key away. Paste a new one."
       : null;
 
   // on the body, so nothing it's opened from (a moving search box, a sheet) can clip or shift it
@@ -185,7 +185,7 @@ export default function KeyModal({
         </div>
 
         <h2 id="key-title">{copy.title(name)}</h2>
-        <p className="key-sub">Bygga&apos;s AI runs on your own Together AI key.</p>
+        <p className="key-sub">Bygga&apos;s AI runs on your own OpenRouter key.</p>
 
         <ul className="key-feats">
           {copy.features.map((f) => {
@@ -207,7 +207,7 @@ export default function KeyModal({
           <div className="key-cost out">
             <span className="key-cent">$0</span>
             <span>
-              <b>Your Together credit ran out.</b>
+              <b>Your OpenRouter credit ran out.</b>
               <a href={BILLING_URL} target="_blank" rel="noreferrer">
                 Add credit <IExternal size={12} />
               </a>{" "}
@@ -270,7 +270,7 @@ export default function KeyModal({
                   save(v);
                 }}
                 placeholder="Paste your key"
-                aria-label="Together AI API key"
+                aria-label="OpenRouter API key"
                 aria-invalid={bad}
                 aria-describedby="key-help"
                 autoComplete="off"
@@ -298,7 +298,7 @@ export default function KeyModal({
             <>
               No key yet?{" "}
               <a href={KEY_URL} target="_blank" rel="noreferrer">
-                Make one at together.ai <IExternal size={12} />
+                Make one at openrouter.ai <IExternal size={12} />
               </a>
             </>
           )}

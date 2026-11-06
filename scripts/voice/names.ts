@@ -18,8 +18,8 @@ import { spokenName } from "@/lib/voice/script";
 import { forTTS, speak } from "@/lib/voice/tts";
 
 const FILE = path.resolve(import.meta.dirname, "../../src/lib/voice/names.ts");
-const key = process.env.TOGETHER_API_KEY?.trim();
-if (!key) throw new Error("TOGETHER_API_KEY is not set");
+const key = process.env.OPENROUTER_API_KEY?.trim();
+if (!key) throw new Error("OPENROUTER_API_KEY is not set");
 const args = process.argv.slice(2);
 const names: Record<string, string> = existsSync(FILE) ? JSON.parse(readFileSync(FILE, "utf8").replace(/^[^{]*/, "").replace(/;\s*$/, "")) : {};
 const save = () =>
@@ -54,7 +54,7 @@ async function ask(list: string[]): Promise<Record<string, string>> {
 }
 
 async function askOnce(list: string[]) {
-  const r = await fetch("https://api.together.xyz/v1/chat/completions", {
+  const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -75,11 +75,13 @@ async function askOnce(list: string[]) {
 }
 
 async function transcribe(buf: ArrayBuffer) {
-  const form = new FormData();
-  form.append("file", new Blob([buf], { type: "audio/mpeg" }), "clip.mp3");
-  form.append("model", "openai/whisper-large-v3");
-  form.append("language", "en");
-  const r = await fetch("https://api.together.ai/v1/audio/transcriptions", { method: "POST", headers: { Authorization: `Bearer ${key}` }, body: form });
+  const input_audio = { data: Buffer.from(buf).toString("base64"), format: "mp3" };
+  const r = await fetch("https://openrouter.ai/api/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "openai/whisper-large-v3", input_audio }),
+  });
+  if (!r.ok) throw new Error(`whisper ${r.status}`);
   return String((await r.json()).text ?? "");
 }
 

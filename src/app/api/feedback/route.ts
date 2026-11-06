@@ -1,5 +1,5 @@
 import { saveFeedback, type FeedbackEntry } from "@/lib/feedback";
-import { fromApp, ipOf, rateLimited } from "@/lib/together";
+import { fromApp, ipOf, rateLimited } from "@/lib/openrouter";
 
 const TOPICS = new Set(["looks", "size", "steps", "bug", "idea", "other"]);
 const PHASES = new Set(["cover", "tools", "parts", "steps", "done"]);

@@ -60,7 +60,7 @@ export function primeListening() {
  * Listens while voice mode is on. The page opens the mic itself, with echo
  * cancelling, so the voice playing from the same speakers is mostly gone
  * before anything else hears it; each time someone talks, that piece goes to
- * Whisper on Together (/api/listen) and onHeard gets the text, with the
+ * Whisper on OpenRouter (/api/listen) and onHeard gets the text, with the
  * piece's times so her own words can be told apart. onHeard returns what it
  * acted on, to show as "Heard ...", or null. `her` says whether the voice is
  * playing, so what's left of her in the mic isn't taken for someone talking.

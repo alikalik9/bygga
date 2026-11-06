@@ -2,7 +2,7 @@ import Link from "next/link";
 import Logo from "./Logo";
 import { Crew } from "./art/Figure";
 import { IArrowOut } from "./art/Icons";
-import { TogetherWordmark } from "./art/Together";
+import { OpenRouterWordmark } from "./art/OpenRouter";
 import { GITHUB_URL, SCAN_ENABLED } from "@/lib/site";
 
 const CREW = [
@@ -32,8 +32,8 @@ export default function SiteFooter() {
             <a href={GITHUB_URL} target="_blank" rel="noreferrer">
               Source code <IArrowOut size={14} />
             </a>
-            <a href="https://togetherai.link/" target="_blank" rel="noreferrer">
-              Together AI <IArrowOut size={14} />
+            <a href="https://openrouter.ai/" target="_blank" rel="noreferrer">
+              OpenRouter <IArrowOut size={14} />
             </a>
             <Link href="/privacy">Privacy and terms</Link>
           </div>
@@ -56,9 +56,9 @@ export default function SiteFooter() {
 
       <div className="foot-base">
         <p>Bygga is an independent, unofficial project. It is not affiliated with, sponsored or endorsed by Inter IKEA Systems B.V. or any IKEA company. IKEA and IKEA product names are trademarks of their owners.</p>
-        <a className="foot-powered" href="https://togetherai.link/" target="_blank" rel="noreferrer">
+        <a className="foot-powered" href="https://openrouter.ai/" target="_blank" rel="noreferrer">
           <span>Powered by</span>
-          <TogetherWordmark height={19} className="tg-word" />
+          <OpenRouterWordmark height={19} className="tg-word" />
         </a>
       </div>
     </footer>

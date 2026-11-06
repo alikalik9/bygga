@@ -244,9 +244,9 @@ export default function HelpSheet({
           error,
           content:
             error === "key"
-              ? "Together turned your key away, so I couldn't answer."
+              ? "OpenRouter turned your key away, so I couldn't answer."
               : error === "credits"
-                ? "Your Together credit ran out, so I couldn't answer."
+                ? "Your OpenRouter credit ran out, so I couldn't answer."
                 : "I couldn't reach the helper just now. Try the quick answers above, or ask again in a moment.",
         };
         return c;
@@ -317,7 +317,7 @@ export default function HelpSheet({
                   </button>
                 ))}
               </div>
-              <p className="ask-note">{ai ? "Answers come with pictures of the parts. Snap a part to ask which one it is." : "Answers come with pictures of the parts. Runs on your own Together AI key, about a cent a build."}</p>
+              <p className="ask-note">{ai ? "Answers come with pictures of the parts. Snap a part to ask which one it is." : "Answers come with pictures of the parts. Runs on your own OpenRouter key, about a cent a build."}</p>
             </>
           )}
           <div className="msgs">
@@ -336,7 +336,7 @@ export default function HelpSheet({
                     </button>
                   )}
                   {m.error === "credits" && (
-                    <a className="msg-fix" href="https://api.together.ai/settings/billing" target="_blank" rel="noreferrer">
+                    <a className="msg-fix" href="https://openrouter.ai/settings/credits" target="_blank" rel="noreferrer">
                       Add credit <IExternal size={12} />
                     </a>
                   )}

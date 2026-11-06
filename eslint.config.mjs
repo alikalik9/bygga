@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // copied from pdfjs-dist by scripts/pdf-worker.mjs
+    "public/pdf.worker.min.mjs",
     // agent worktrees and local tool state
     ".claude/**",
     ".sweep/**",

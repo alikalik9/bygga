@@ -11,7 +11,7 @@ import { Figure } from "@/components/art/Figure";
 import { ToolArt } from "@/components/art/Tools";
 import { HwArt } from "@/components/art/Hardware";
 import { IArrowOut, IArrowRight, IScan } from "@/components/art/Icons";
-import { TogetherMark } from "@/components/art/Together";
+import { OpenRouterMark } from "@/components/art/OpenRouter";
 import { PRODUCT_COUNT } from "@/lib/search";
 import { SCAN_ENABLED } from "@/lib/site";
 
@@ -32,12 +32,12 @@ export default function Home() {
 
       <section className="hero">
         <div className="hero-copy">
-          <a className="tg-pill" href="https://togetherai.link/" target="_blank" rel="noreferrer">
+          <a className="tg-pill" href="https://openrouter.ai/" target="_blank" rel="noreferrer">
             <span className="tg-badge">
-              <TogetherMark size={16} />
+              <OpenRouterMark size={16} />
             </span>
             <span className="tg-text">
-              Powered by <b>Together AI</b>
+              Powered by <b>OpenRouter</b>
             </span>
             <IArrowOut size={14} className="tg-go" />
           </a>

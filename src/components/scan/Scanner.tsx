@@ -11,8 +11,10 @@ import { getUserKey, setUserKey, subscribeKey } from "@/lib/userKey";
 import Thumb from "../Thumb";
 import { IArrowRight, ICamera, ICheck, IClose, IExternal, IImage, IKey, ILock, IPlus } from "../art/Icons";
 
-const MAX_PAGES = 12;
-const KEY_URL = "https://api.together.ai/settings/api-keys";
+const MAX_PAGES = 24;
+/** Keeps the whole scan under upload limits: a page is compressed until its data URL fits. */
+const MAX_PAGE_CHARS = 150_000;
+const KEY_URL = "https://openrouter.ai/settings/keys";
 
 interface Page {
   id: string;
@@ -22,15 +24,16 @@ interface Page {
 }
 
 type Stage = "reading" | "planning" | "checking" | "fixing";
-type Err = "key" | "credits" | "busy" | "unreadable" | "failed" | "pages";
+type Err = "key" | "credits" | "busy" | "unreadable" | "failed" | "pages" | "pdf";
 
 const ERRORS: Record<Err, string> = {
-  key: "Together AI didn't accept your key. Check it and try again.",
-  credits: "Your Together AI account is out of credits. Top it up, then try again.",
+  key: "OpenRouter didn't accept your key. Check it and try again.",
+  credits: "Your OpenRouter account is out of credits. Top it up, then try again.",
   busy: "Too many scans at once. Give it a minute, then try again.",
-  unreadable: "We couldn't read those photos. Try bright, flat, straight on shots of each page.",
+  unreadable: "We couldn't read those pages. Try bright, flat, straight on photos, or a clearer PDF.",
   failed: "Something went wrong while drawing your guide. Try again.",
-  pages: "Those photos didn't come through. Add them again.",
+  pages: "Those pages didn't come through. Add them again.",
+  pdf: "We couldn't open that PDF. Try one without a password, or use photos of the pages.",
 };
 
 export default function Scanner() {
@@ -47,9 +50,12 @@ export default function Scanner() {
   const [started, setStarted] = useState(0);
   const [now, setNow] = useState(0);
   const [drag, setDrag] = useState(false);
+  const [importing, setImporting] = useState("");
+  const [notice, setNotice] = useState("");
   const ac = useRef<AbortController | null>(null);
   const files = useRef<HTMLInputElement>(null);
   const cam = useRef<HTMLInputElement>(null);
+  const adding = useRef(false);
   const keyBox = useRef<{ edit: () => void } | null>(null);
 
   useEffect(() => {
@@ -60,21 +66,47 @@ export default function Scanner() {
   useEffect(() => () => ac.current?.abort(), []);
 
   async function addFiles(list: FileList | File[]) {
-    const room = MAX_PAGES - pages.length;
-    const pick = [...list].filter((f) => f.type.startsWith("image/")).slice(0, room);
-    const next: Page[] = [];
-    for (const f of pick) {
-      try {
-        next.push({ id: Math.random().toString(36).slice(2), url: await shrink(f) });
-      } catch {
-        /* unreadable image */
-      }
-    }
-    setPages((p) => [...p, ...next].slice(0, MAX_PAGES));
+    if (adding.current) return;
+    const picked = [...list];
+    if (!picked.length) return;
+    adding.current = true;
     setErr(null);
+    setNotice("");
+    // one shared budget, so a PDF and photos added together still stop at MAX_PAGES
+    const room = { left: Math.max(0, MAX_PAGES - pages.length) };
+    const add = (url: string) => {
+      if (room.left <= 0) return false;
+      room.left -= 1;
+      setPages((p) => (p.length >= MAX_PAGES ? p : [...p, { id: Math.random().toString(36).slice(2), url }]));
+      return true;
+    };
+    try {
+      for (const f of picked) {
+        if (!room.left) break;
+        if (f.type === "application/pdf" || /\.pdf$/i.test(f.name)) {
+          try {
+            const { total, added } = await readPdf(f, add, () => room.left > 0, setImporting);
+            if (total > added) setNotice(`Added the first ${added} of ${total} pages. A scan can hold ${MAX_PAGES}.`);
+          } catch {
+            setErr("pdf");
+          }
+        } else if (f.type.startsWith("image/")) {
+          try {
+            setImporting("Preparing your pages");
+            add(await shrink(f));
+          } catch {
+            /* unreadable image */
+          }
+        }
+      }
+    } finally {
+      adding.current = false;
+      setImporting("");
+    }
   }
 
   async function start() {
+    if (importing) return;
     if (!key) {
       keyBox.current?.edit();
       return;
@@ -99,7 +131,7 @@ export default function Scanner() {
     try {
       const res = await fetch("/api/scan", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-together-key": key },
+        headers: { "Content-Type": "application/json", "x-openrouter-key": key },
         body: JSON.stringify({ pages: pages.map((p) => p.url), hint }),
         signal: c.signal,
       });
@@ -171,7 +203,7 @@ export default function Scanner() {
     <div className="scan">
       <header className="scan-head">
         <h1>Scan a paper manual</h1>
-        <p className="lead">For furniture that isn&apos;t from IKEA. Photograph the manual and Together AI turns it into a step by step guide in 3D.</p>
+        <p className="lead">For furniture that isn&apos;t from IKEA. Photograph the manual or upload a PDF, and OpenRouter turns it into a step by step guide in 3D.</p>
       </header>
 
       <AnimatePresence mode="wait" initial={false}>
@@ -180,7 +212,7 @@ export default function Scanner() {
             <section className="sf-row">
               <span className="sf-n">1</span>
               <div className="sf-body">
-                <h2>Your Together AI key</h2>
+                <h2>Your OpenRouter key</h2>
                 <KeyBox value={key} api={keyBox} />
               </div>
             </section>
@@ -188,7 +220,7 @@ export default function Scanner() {
             <section className="sf-row">
               <span className="sf-n">2</span>
               <div className="sf-body">
-                <h2>Photos of the manual</h2>
+                <h2>Photos or a PDF of the manual</h2>
                 <p className="sf-help">Just the cover works. Every page gives an exact match.</p>
                 <div
                   className={"drop" + (drag ? " over" : "") + (pages.length ? " has" : "")}
@@ -207,7 +239,7 @@ export default function Scanner() {
                     <div className="drop-empty">
                       <ManualArt />
                       <p>
-                        Drop photos here, or <button onClick={() => files.current?.click()}>choose them</button>
+                        Drop photos or a PDF here, or <button onClick={() => files.current?.click()}>choose them</button>
                       </p>
                       <button className="btn ghost cam-only" onClick={() => cam.current?.click()}>
                         <ICamera size={18} /> Take a photo
@@ -241,11 +273,20 @@ export default function Scanner() {
                     </ol>
                   )}
                 </div>
-                <input ref={files} type="file" accept="image/*" multiple hidden onChange={(e) => e.target.files && addFiles(e.target.files).then(() => (e.target.value = ""))} />
+                <input ref={files} type="file" accept="image/*,application/pdf" multiple hidden onChange={(e) => e.target.files && addFiles(e.target.files).then(() => (e.target.value = ""))} />
                 <input ref={cam} type="file" accept="image/*" capture="environment" hidden onChange={(e) => e.target.files && addFiles(e.target.files).then(() => (e.target.value = ""))} />
-                <p className="sf-tip">
-                  <IImage size={15} /> Got a PDF? Screenshots of its pages work too. Up to {MAX_PAGES} pages.
+                <p className="sf-tip" role={importing ? "status" : undefined}>
+                  {importing ? (
+                    <>
+                      <span className="spin" style={{ width: 14, height: 14 }} /> {importing}
+                    </>
+                  ) : (
+                    <>
+                      <IImage size={15} /> Photos or a PDF, rendered page by page in your browser. Up to {MAX_PAGES} pages.
+                    </>
+                  )}
                 </p>
+                {notice && <p className="sf-tip">{notice}</p>}
               </div>
             </section>
 
@@ -264,7 +305,7 @@ export default function Scanner() {
                 <motion.p className="scan-err" role="alert" initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
                   {ERRORS[err]}
                   {err === "credits" && (
-                    <a href="https://api.together.ai/settings/billing" target="_blank" rel="noreferrer">
+                    <a href="https://openrouter.ai/settings/credits" target="_blank" rel="noreferrer">
                       Billing <IExternal size={13} />
                     </a>
                   )}
@@ -274,10 +315,18 @@ export default function Scanner() {
 
             <div className="scan-go">
               <button className="btn primary big" onClick={start}>
-                <span>{!key ? "Add your key to start" : pages.length ? `Make my guide from ${pages.length} ${pages.length === 1 ? "photo" : "photos"}` : "Add photos to start"}</span>
+                <span>
+                  {!key
+                    ? "Add your key to start"
+                    : importing
+                      ? "Preparing your pages"
+                      : pages.length
+                        ? `Make my guide from ${pages.length} ${pages.length === 1 ? "page" : "pages"}`
+                        : "Add photos or a PDF to start"}
+                </span>
                 <IArrowRight />
               </button>
-              <p>Takes about a minute. Uses your Together AI credits, usually a few cents.</p>
+              <p>Takes about a minute. Uses your OpenRouter credits, usually a few cents.</p>
             </div>
           </motion.div>
         ) : (
@@ -362,7 +411,7 @@ export default function Scanner() {
       </AnimatePresence>
 
       <p className="scan-privacy">
-        <ILock size={14} /> Your key and photos go straight to Together AI for this scan. We don&apos;t keep them. The finished guide is saved only in this browser.
+        <ILock size={14} /> Your key and pages go straight to OpenRouter for this scan. We don&apos;t keep them. The finished guide is saved only in this browser.
       </p>
     </div>
   );
@@ -405,7 +454,7 @@ function KeyBox({ value, api }: { value: string; api: React.RefObject<{ edit: ()
     if (!k) return;
     setState("checking");
     try {
-      const r = await fetch("/api/key", { method: "POST", headers: { "x-together-key": k } });
+      const r = await fetch("/api/key", { method: "POST", headers: { "x-openrouter-key": k } });
       const j = (await r.json()) as { ok: boolean; reason?: string };
       if (j.ok || j.reason === "unavailable") {
         setUserKey(k);
@@ -459,7 +508,7 @@ function KeyBox({ value, api }: { value: string; api: React.RefObject<{ edit: ()
             setState("idle");
           }}
           placeholder="Paste your key"
-          aria-label="Together AI API key"
+          aria-label="OpenRouter API key"
           autoComplete="off"
           spellCheck={false}
         />
@@ -482,7 +531,7 @@ function KeyBox({ value, api }: { value: string; api: React.RefObject<{ edit: ()
       </form>
       <p className={"sf-help" + (state === "bad" ? " bad" : "")}>
         {state === "bad" ? (
-          "Together AI didn't accept that key. Copy it again from your dashboard."
+          "OpenRouter didn't accept that key. Copy it again from your dashboard."
         ) : (
           <>
             Scanning runs on your own key, so you control the cost.{" "}
@@ -527,14 +576,68 @@ async function shrink(file: File): Promise<string> {
     });
     const k = Math.min(1, 1400 / Math.max(img.width, img.height));
     const c = document.createElement("canvas");
-    c.width = Math.round(img.width * k);
-    c.height = Math.round(img.height * k);
+    c.width = Math.max(1, Math.round(img.width * k));
+    c.height = Math.max(1, Math.round(img.height * k));
     const g = c.getContext("2d")!;
     g.fillStyle = "#fff";
     g.fillRect(0, 0, c.width, c.height);
     g.drawImage(img, 0, 0, c.width, c.height);
-    return c.toDataURL("image/jpeg", 0.82);
+    return encode(c);
   } finally {
     URL.revokeObjectURL(url);
   }
+}
+
+/** Every PDF page becomes one image, in order, until the scan is full. */
+async function readPdf(
+  file: File,
+  add: (url: string) => boolean,
+  hasRoom: () => boolean,
+  progress: (s: string) => void,
+): Promise<{ total: number; added: number }> {
+  const pdf = await import("pdfjs-dist");
+  // the worker is copied into public/ by scripts/pdf-worker.mjs, so the strict CSP holds
+  pdf.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
+  const task = pdf.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
+  const doc = await task.promise;
+  let added = 0;
+  try {
+    for (let n = 1; n <= doc.numPages && hasRoom(); n++) {
+      progress(`Rendering page ${n} of ${doc.numPages}`);
+      const page = await doc.getPage(n);
+      try {
+        const base = page.getViewport({ scale: 1 });
+        // about 130 dpi on A4: small print stays readable to the model
+        const scale = Math.min(2.5, Math.max(1, 1600 / Math.max(base.width, base.height)));
+        const viewport = page.getViewport({ scale });
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.floor(viewport.width));
+        canvas.height = Math.max(1, Math.floor(viewport.height));
+        await page.render({ canvas, viewport }).promise;
+        if (!add(encode(canvas))) break;
+        added += 1;
+      } finally {
+        page.cleanup();
+      }
+    }
+    return { total: doc.numPages, added };
+  } finally {
+    await task.destroy();
+  }
+}
+
+let pageType: "image/webp" | "image/jpeg" | null = null;
+
+/** WebP where the browser has it, then quality only as low as the scan's upload budget needs. */
+function encode(canvas: HTMLCanvasElement): string {
+  if (!pageType) {
+    const probe = document.createElement("canvas");
+    probe.width = probe.height = 1;
+    pageType = probe.toDataURL("image/webp").startsWith("data:image/webp") ? "image/webp" : "image/jpeg";
+  }
+  let url = canvas.toDataURL(pageType, 0.8);
+  for (let q = 0.72; url.length > MAX_PAGE_CHARS && q >= 0.4; q -= 0.08) {
+    url = canvas.toDataURL(pageType, q);
+  }
+  return url;
 }

@@ -2,7 +2,7 @@ import { buildPlan } from "@/lib/plan";
 import { clean, fallbackSpec, parseScan } from "@/lib/scan/parse";
 import { PAGE_PROMPT, PLAN_PROMPT, planInput, repairInput } from "@/lib/scan/prompts";
 import { SAMPLE_SCAN } from "@/lib/scan/sample";
-import { chatText, extractJson, fromApp, ipOf, isDevKey, MODELS, rateLimited, TogetherError, userKey, type Msg } from "@/lib/together";
+import { chatText, extractJson, fromApp, ipOf, isDevKey, MODELS, rateLimited, OpenRouterError, userKey, type Msg } from "@/lib/openrouter";
 import type { ProductSpec } from "@/lib/types";
 import { SCAN_ENABLED } from "@/lib/site";
 
@@ -19,8 +19,10 @@ export async function POST(req: Request) {
   if (!key) return Response.json({ error: "key" }, { status: 401 });
   if (rateLimited(ipOf(req) + ":scan", 6, 10 * 60_000)) return Response.json({ error: "busy" }, { status: 429 });
   const body = (await req.json().catch(() => null)) as { pages?: unknown[]; hint?: unknown } | null;
-  const pages = (body?.pages ?? []).filter((p): p is string => typeof p === "string" && p.startsWith("data:image/") && p.length < 4_000_000).slice(0, 12);
+  const pages = (body?.pages ?? []).filter((p): p is string => typeof p === "string" && p.startsWith("data:image/") && p.length < 500_000).slice(0, 24);
   if (!pages.length) return Response.json({ error: "pages" }, { status: 400 });
+  // hosts cap request bodies, so keep a whole scan comfortably inside one upload
+  if (pages.reduce((n, p) => n + p.length, 0) > 4_000_000) return Response.json({ error: "pages" }, { status: 413 });
   const hint = clean(String(body?.hint ?? "")).slice(0, 80);
 
   const enc = new TextEncoder();
@@ -35,8 +37,8 @@ export async function POST(req: Request) {
         const spec = mock ? await fake(pages.length, hint, send) : await scan(key, pages, hint, send, req.signal);
         send({ type: "done", spec });
       } catch (e) {
-        const err = e as TogetherError;
-        const status = err instanceof TogetherError ? err.status : 0;
+        const err = e as OpenRouterError;
+        const status = err instanceof OpenRouterError ? err.status : 0;
         console.error("[scan]", status, (err.message ?? "").slice(0, 200));
         const code = status === 401 || status === 403 ? "key" : status === 402 ? "credits" : status === 429 ? "busy" : (err.message ?? "").startsWith("unreadable") ? "unreadable" : "failed";
         send({ type: "error", code });
@@ -68,7 +70,7 @@ async function scan(key: string, pages: string[], hint: string, send: (o: object
         });
         notes[i] = (extractJson(text) as Note | null) ?? { kind: "other" };
       } catch (e) {
-        if (e instanceof TogetherError && [401, 402, 403, 429].includes(e.status)) throw e;
+        if (e instanceof OpenRouterError && [401, 402, 403, 429].includes(e.status)) throw e;
         notes[i] = { kind: "other" };
       }
       read++;

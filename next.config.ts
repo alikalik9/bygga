@@ -90,8 +90,8 @@ const nextConfig: NextConfig = {
     ];
   },
   async redirects() {
-    // the manual scanner is parked for v2: old links land on the search instead
-    return process.env.NEXT_PUBLIC_SCAN === "1" ? [] : [{ source: "/scan", destination: "/", permanent: false }];
+    // only when the scanner is turned off: old links land on the search instead
+    return process.env.NEXT_PUBLIC_SCAN === "0" ? [{ source: "/scan", destination: "/", permanent: false }] : [];
   },
 };
 

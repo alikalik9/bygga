@@ -193,7 +193,7 @@ export default function Search({ ai, autoFocus }: { ai: boolean; autoFocus?: boo
                 </span>
                 <span className="s-text">
                   <b>Find &ldquo;{q.trim()}&rdquo;</b>
-                  <span>{ai ? "Together AI will work out the steps" : "Pick what it looks like, we'll do the rest"}</span>
+                  <span>{ai ? "OpenRouter will work out the steps" : "Pick what it looks like, we'll do the rest"}</span>
                 </span>
                 <IArrowRight size={18} />
               </li>

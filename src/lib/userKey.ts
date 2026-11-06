@@ -2,8 +2,8 @@
 
 import { useSyncExternalStore } from "react";
 
-/** The person's own Together AI key. It lives only in this browser and rides along with AI requests: every AI feature runs on it. */
-const K = "bygga:together-key";
+/** The person's own OpenRouter key. It lives only in this browser and rides along with AI requests: every AI feature runs on it. */
+const K = "bygga:openrouter-key";
 
 export function getUserKey(): string {
   try {
@@ -25,7 +25,7 @@ export function setUserKey(v: string) {
 
 export function keyHeaders(): Record<string, string> {
   const k = getUserKey();
-  return k ? { "x-together-key": k } : {};
+  return k ? { "x-openrouter-key": k } : {};
 }
 
 export function subscribeKey(cb: () => void) {
@@ -43,4 +43,4 @@ export function useUserKey() {
 }
 
 /** Where to make a key. */
-export const KEY_URL = "https://api.together.ai/settings/api-keys";
+export const KEY_URL = "https://openrouter.ai/settings/keys";

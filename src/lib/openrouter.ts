@@ -1,16 +1,17 @@
 import "server-only";
 
-const BASE = "https://api.together.xyz/v1";
+const BASE = "https://openrouter.ai/api/v1";
+const SITE = (process.env.NEXT_PUBLIC_SITE_URL || "https://www.usebygga.com").replace(/\/$/, "");
 
 export const MODELS = {
   // laying out a scanned manual: the strongest reasoning we can afford per scan
-  plan: list(process.env.TOGETHER_PLAN_MODEL, "openai/gpt-oss-120b,zai-org/GLM-5.3-Flash,Qwen/Qwen3.7-Plus"),
-  // product lookups and the "Stuck?" chat: cheap and quick
-  text: list(process.env.TOGETHER_TEXT_MODEL, "openai/gpt-oss-120b,zai-org/GLM-5.3-Flash,Qwen/Qwen3.8-Flash"),
+  plan: list(process.env.OPENROUTER_PLAN_MODEL, "anthropic/claude-opus-5.5,anthropic/claude-sonnet-5.5"),
+  // product lookups and the "Stuck?" chat: quick and good enough
+  text: list(process.env.OPENROUTER_TEXT_MODEL, "anthropic/claude-sonnet-5.5,anthropic/claude-haiku-5.5"),
   // box labels and loose parts
-  vision: list(process.env.TOGETHER_VISION_MODEL, "nvidia/NVIDIA-Nemotron-3.5-Super-VL,MiniMaxAI/MiniMax-M3,Qwen/Qwen3.5-9B"),
+  vision: list(process.env.OPENROUTER_VISION_MODEL, "anthropic/claude-sonnet-5.5,anthropic/claude-haiku-5.5"),
   // reading manual pages, where small print matters most
-  read: list(process.env.TOGETHER_READ_MODEL, "MiniMaxAI/MiniMax-M3,nvidia/NVIDIA-Nemotron-3.5-Super-VL,Qwen/Qwen3.5-9B"),
+  read: list(process.env.OPENROUTER_READ_MODEL, "anthropic/claude-opus-5.5,anthropic/claude-sonnet-5.5"),
 };
 
 function list(env: string | undefined, fallback: string) {
@@ -36,7 +37,7 @@ interface ChatOpts {
   reasoning?: "low" | "medium" | "high";
 }
 
-export class TogetherError extends Error {
+export class OpenRouterError extends Error {
   constructor(
     message: string,
     public status: number,
@@ -45,13 +46,24 @@ export class TogetherError extends Error {
   }
 }
 
-/** Calls Together's chat completions, falling back through the model list when one is unavailable. */
+/** Headers OpenRouter uses to attribute the app, plus the person's own key. */
+export function headers(key: string, json = true) {
+  return {
+    Authorization: `Bearer ${key}`,
+    ...(json ? { "Content-Type": "application/json" } : {}),
+    "HTTP-Referer": SITE,
+    "X-OpenRouter-Title": "Bygga",
+  };
+}
+
+/** Calls OpenRouter's chat completions, falling back through the model list when one is unavailable. */
 export async function chat(o: ChatOpts): Promise<{ res: Response; model: string }> {
   const key = o.key?.trim();
-  if (!key) throw new TogetherError("missing key", 401);
-  let lastErr: TogetherError | null = null;
+  if (!key) throw new OpenRouterError("missing key", 401);
+  let lastErr: OpenRouterError | null = null;
   for (const model of o.models.map((m) => m.trim()).filter(Boolean)) {
-    const reasoning = model.includes("gpt-oss") ? { reasoning_effort: o.reasoning ?? "low" } : {};
+    // a model that thinks before it answers gets a budget for it; other models ignore the hint
+    const reasoning = o.reasoning ? { reasoning: { effort: o.reasoning } } : {};
     for (const withExtras of [true, false]) {
       const body = {
         model,
@@ -66,23 +78,23 @@ export async function chat(o: ChatOpts): Promise<{ res: Response; model: string 
       try {
         res = await fetch(`${BASE}/chat/completions`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+          headers: headers(key),
           body: JSON.stringify(body),
           signal: o.signal,
         });
       } catch (e) {
-        lastErr = new TogetherError((e as Error).message, 502);
+        lastErr = new OpenRouterError((e as Error).message, 502);
         break;
       }
       if (res.ok) return { res, model };
       const text = await res.text().catch(() => "");
-      lastErr = new TogetherError(text.slice(0, 300) || res.statusText, res.status);
+      lastErr = new OpenRouterError(text.slice(0, 300) || res.statusText, res.status);
       if (res.status === 401 || res.status === 402 || res.status === 403 || res.status === 429) throw lastErr;
       // 400 may be an unsupported extra parameter: retry once without extras, otherwise move on
       if (res.status !== 400) break;
     }
   }
-  throw lastErr ?? new TogetherError("no model available", 503);
+  throw lastErr ?? new OpenRouterError("no model available", 503);
 }
 
 export async function chatText(o: Omit<ChatOpts, "stream">) {
@@ -134,13 +146,13 @@ export function rateLimited(bucket: string, max = 20, windowMs = 60_000) {
 export const DEV_KEY = "bygga-dev-mock-key-000000";
 
 export function isDevKey(req: Request) {
-  return process.env.NODE_ENV !== "production" && req.headers.get("x-together-key")?.trim() === DEV_KEY;
+  return process.env.NODE_ENV !== "production" && req.headers.get("x-openrouter-key")?.trim() === DEV_KEY;
 }
 
 /** The key the person pasted into the app, sent along with each request. Never stored or logged, and the only key any AI call runs on. */
 export function userKey(req: Request) {
-  if (isDevKey(req)) return process.env.TOGETHER_API_KEY?.trim() || undefined;
-  const k = req.headers.get("x-together-key")?.trim() ?? "";
+  if (isDevKey(req)) return process.env.OPENROUTER_API_KEY?.trim() || undefined;
+  const k = req.headers.get("x-openrouter-key")?.trim() ?? "";
   return k.length >= 20 && k.length <= 200 && /^[\w.-]+$/.test(k) ? k : undefined;
 }
 
